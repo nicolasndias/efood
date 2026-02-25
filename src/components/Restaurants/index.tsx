@@ -3,17 +3,18 @@ import estrelaImg from '../../assets/images/estrela.png'
 import Tag from '../Tag'
 import { Link } from 'react-router-dom'
 
+export type TagInfo = {
+  text: string
+  size: 'big' | 'small'
+}
+
 type Props = {
   id: number
   title: string
   image: string
   description: string
   classification: string
-  infos: TagInfo[]
-}
-export type TagInfo = {
-  text: string
-  size: 'big' | 'small'
+  infos?: TagInfo[]
 }
 
 const Restaurant = ({
@@ -21,11 +22,12 @@ const Restaurant = ({
   image,
   title,
   classification,
-  infos,
+  infos = [],
   id
 }: Props) => (
   <ContainerRest>
     <img src={image} alt={title} />
+
     <Infos>
       {infos.map((info) => (
         <Tag size={info.size} key={info.text}>
@@ -33,6 +35,7 @@ const Restaurant = ({
         </Tag>
       ))}
     </Infos>
+
     <div>
       <h3>{title}</h3>
       <span>
@@ -40,7 +43,9 @@ const Restaurant = ({
         <img src={estrelaImg} alt="Classificação" />
       </span>
     </div>
+
     <Description>{description}</Description>
+
     <Link to={`/perfil/${id}`}>
       <StyledButton type="button">Saiba mais</StyledButton>
     </Link>

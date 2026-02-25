@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Footer from '../../components/Footer'
 import Header from '../../components/Header'
 import RestaurantList from '../../components/List'
+
 export type CardapioItem = {
   id: number
   nome: string
@@ -11,6 +12,7 @@ export type CardapioItem = {
   foto: string
   quantidade: number
 }
+
 export type Restaurants = {
   foto: string
   infos: string[]
@@ -28,9 +30,11 @@ const Home = () => {
   const [restaurants, setRestaurants] = useState<Restaurants[]>([])
 
   useEffect(() => {
-    fetch('https://fake-api-tau.vercel.app/api/efood/restaurantes')
-      .then((resposta) => resposta.json())
-      .then((resposta) => setRestaurants(resposta))
+    fetch('https://api-ebac.vercel.app/api/efood/restaurantes')
+      .then((res) => res.json())
+      .then((res) => {
+        setRestaurants(res) // 🔥 AQUI estava o erro
+      })
   }, [])
 
   return (
@@ -41,4 +45,5 @@ const Home = () => {
     </>
   )
 }
+
 export default Home

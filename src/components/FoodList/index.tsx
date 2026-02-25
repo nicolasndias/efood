@@ -29,10 +29,12 @@ export default function FoodList() {
     null
   )
 
-  // 🔥 Query segura sem non-null assertion
-  const { data } = useGetRestauranteQuery(id as string, {
+  const { data, isLoading } = useGetRestauranteQuery(id as string, {
     skip: !id
   })
+
+  if (isLoading) return <h2>Carregando...</h2>
+  if (!data) return <h2>Restaurante não encontrado</h2>
 
   const handleAddToCart = () => {
     if (pratoSelecionado) {
@@ -42,9 +44,6 @@ export default function FoodList() {
       setPratoSelecionado(null)
     }
   }
-
-  // Evita render caso ainda não tenha dados
-  if (!data?.cardapio) return null
 
   return (
     <Container>

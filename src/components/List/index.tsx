@@ -1,13 +1,13 @@
 import { Container } from '../../styles'
 import Restaurant from '../Restaurants'
 import { List } from './styles'
-import type { TagInfo } from '../Restaurants'
 import type { Restaurants } from '../../pages/Home'
 
 type Props = {
-  restaurants: Restaurants[]
+  restaurants?: Restaurants[]
 }
-const RestaurantList = ({ restaurants }: Props) => {
+
+const RestaurantList = ({ restaurants = [] }: Props) => {
   const getRestaurantTags = (
     restaurant: Restaurants
   ): { text: string; size: 'big' | 'small' }[] => {
@@ -23,22 +23,24 @@ const RestaurantList = ({ restaurants }: Props) => {
 
     return tags
   }
+
   return (
     <Container>
       <List>
-        {restaurants.map((restaurants) => (
+        {restaurants.map((restaurant) => (
           <Restaurant
-            key={restaurants.id}
-            id={restaurants.id}
-            classification={restaurants.avaliacao}
-            description={restaurants.descricao}
-            image={restaurants.capa}
-            infos={getRestaurantTags(restaurants)}
-            title={restaurants.titulo}
+            key={restaurant.id}
+            id={restaurant.id}
+            classification={restaurant.avaliacao}
+            description={restaurant.descricao}
+            image={restaurant.capa}
+            infos={getRestaurantTags(restaurant)}
+            title={restaurant.titulo}
           />
         ))}
       </List>
     </Container>
   )
 }
+
 export default RestaurantList
