@@ -26,8 +26,10 @@ import {
 
 const Checkout = () => {
   const navigate = useNavigate()
-  const { isPayment } = useSelector((state: RootState) => state.cart)
   const dispatch = useDispatch()
+
+  const { isPayment, items } = useSelector((state: RootState) => state.cart)
+
   const [purchase, { data, isSuccess, error }] = usePurchaseMutation()
 
   const fecharPagamento = () => dispatch(closePayment())
@@ -35,10 +37,14 @@ const Checkout = () => {
   const abrirPagamento = () => dispatch(openPayment())
   const limparPedido = () => dispatch(clear())
 
-  const FinishOrder = () => {
+  const finalizarPedido = () => {
     fecharPagamento()
     navigate('/')
     limparPedido()
+  }
+
+  const getTotalPrice = () => {
+    return items.reduce((acc, item) => acc + item.preco * item.quantidade, 0)
   }
 
   const formikEntrega = useFormik({
@@ -50,16 +56,15 @@ const Checkout = () => {
       numero: '',
       complemento: ''
     },
+
     validationSchema: Yup.object({
-      name: Yup.string().required('O nome do destinatário é obrigatório'),
+      name: Yup.string().required('O nome é obrigatório'),
       endereco: Yup.string().required('O endereço é obrigatório'),
       cidade: Yup.string().required('A cidade é obrigatória'),
-      cep: Yup.string()
-        .required('O CEP é obrigatório')
-        .matches(/^[0-9]{8}$/, 'O CEP deve ter 8 dígitos'),
-      numero: Yup.string().required('O número do endereço é obrigatório'),
-      complemento: Yup.string()
+      cep: Yup.string().required('O CEP é obrigatório'),
+      numero: Yup.string().required('O número é obrigatório')
     }),
+
     onSubmit: () => {
       abrirPagamento()
     }
@@ -73,34 +78,21 @@ const Checkout = () => {
       dueMonth: '',
       dueYear: ''
     },
+
     validationSchema: Yup.object({
-      cardName: Yup.string()
-        .required('O nome no cartão é obrigatório')
-        .min(3, 'O nome deve ter pelo menos 3 caracteres'),
-      cardNumber: Yup.string()
-        .required('O número do cartão é obrigatório')
-        .matches(/^[0-9]{16}$/, 'O número do cartão deve ter 16 dígitos'),
-      cvv: Yup.string()
-        .required('O CVV é obrigatório')
-        .matches(/^[0-9]{3}$/, 'O CVV deve ter 3 dígitos'),
-      dueMonth: Yup.string()
-        .required('O mês de vencimento é obrigatório')
-        .matches(
-          /^(0[1-9]|1[0-2])$/,
-          'O mês deve conter dois dígitos, de 01 a 12 (ex: 01, 12)'
-        ),
-      dueYear: Yup.string()
-        .required('O ano de vencimento é obrigatório')
-        .matches(/^[0-9]{4}$/, 'O ano deve estar no formato AAAA')
+      cardName: Yup.string().required('Nome obrigatório'),
+      cardNumber: Yup.string().required('Número obrigatório'),
+      cvv: Yup.string().required('CVV obrigatório'),
+      dueMonth: Yup.string().required('Mês obrigatório'),
+      dueYear: Yup.string().required('Ano obrigatório')
     }),
+
     onSubmit: (values) => {
       purchase({
-        products: [
-          {
-            id: 1,
-            price: 150
-          }
-        ],
+        products: items.map((item) => ({
+          id: item.id,
+          price: item.preco
+        })),
         delivery: {
           receiver: formikEntrega.values.name,
           address: {
@@ -130,11 +122,7 @@ const Checkout = () => {
     return (
       <OrderContainer>
         <OrderTitle>Erro ao realizar o pedido</OrderTitle>
-        <OrderDescription>
-          Ocorreu um erro ao realizar o pedido. Por favor, tente novamente mais
-          tarde.
-        </OrderDescription>
-        <OrderButton onClick={() => fecharPedido()}>Voltar</OrderButton>
+        <OrderButton onClick={fecharPedido}>Voltar</OrderButton>
       </OrderContainer>
     )
   }
@@ -144,245 +132,150 @@ const Checkout = () => {
       {data && isSuccess ? (
         <>
           <OrderTitle>Pedido realizado - {data.orderId}</OrderTitle>
+
           <OrderDescription>
-            Estamos felizes em informar que seu pedido já está em processo de
-            preparação e, em breve, será entregue no endereço fornecido.
-          </OrderDescription>
-          <OrderDescription>
-            Gostaríamos de ressaltar que nossos entregadores não estão
-            autorizados a realizar cobranças extras.
-          </OrderDescription>
-          <OrderDescription>
-            Lembre-se da importância de higienizar as mãos após o recebimento do
-            pedido, garantindo assim sua segurança e bem-estar durante a
-            refeição.
-          </OrderDescription>
-          <OrderDescription>
-            Esperamos que desfrute de uma deliciosa e agradável experiência
-            gastronômica. Bom apetite!
+            Seu pedido está sendo preparado e em breve será entregue.
           </OrderDescription>
 
-          <OrderButton className="marginTop" onClick={() => FinishOrder()}>
+          <OrderButton className="marginTop" onClick={finalizarPedido}>
             Concluir
           </OrderButton>
         </>
       ) : (
         <>
           {isPayment ? (
-            <form id="paymentForm" onSubmit={formikPagamento.handleSubmit}>
-              <OrderTitle>Pagamento - valor a pagar R$ 0</OrderTitle>
+            <form onSubmit={formikPagamento.handleSubmit}>
+              <OrderTitle>
+                Pagamento - valor a pagar R$ {getTotalPrice().toFixed(2)}
+              </OrderTitle>
 
               <OrderRow>
                 <LabelContainer>
-                  <label htmlFor="cardName">Nome do cartão</label>
+                  <label>Nome no cartão</label>
                   <input
-                    type="text"
-                    id="cardName"
                     name="cardName"
                     value={formikPagamento.values.cardName}
                     onChange={formikPagamento.handleChange}
-                    onBlur={formikPagamento.handleBlur}
                   />
-                  {formikPagamento.touched.cardName &&
-                    formikPagamento.errors.cardName && (
-                      <ErrorMessage>
-                        {formikPagamento.errors.cardName}
-                      </ErrorMessage>
-                    )}
                 </LabelContainer>
               </OrderRow>
 
               <OrderRow>
                 <LabelContainer>
-                  <label htmlFor="cardNumber">Número do cartão</label>
+                  <label>Número do cartão</label>
                   <input
-                    type="text"
-                    id="cardNumber"
                     name="cardNumber"
                     value={formikPagamento.values.cardNumber}
                     onChange={formikPagamento.handleChange}
-                    onBlur={formikPagamento.handleBlur}
                   />
-                  {formikPagamento.touched.cardNumber &&
-                    formikPagamento.errors.cardNumber && (
-                      <ErrorMessage>
-                        {formikPagamento.errors.cardNumber}
-                      </ErrorMessage>
-                    )}
                 </LabelContainer>
 
-                <LabelContainer width="86px">
-                  <label htmlFor="cvv">CVV</label>
+                <LabelContainer width="80px">
+                  <label>CVV</label>
                   <input
-                    type="text"
-                    id="cvv"
                     name="cvv"
                     value={formikPagamento.values.cvv}
                     onChange={formikPagamento.handleChange}
-                    onBlur={formikPagamento.handleBlur}
                   />
-                  {formikPagamento.touched.cvv &&
-                    formikPagamento.errors.cvv && (
-                      <ErrorMessage>{formikPagamento.errors.cvv}</ErrorMessage>
-                    )}
                 </LabelContainer>
               </OrderRow>
 
               <OrderRow>
                 <LabelContainer>
-                  <label htmlFor="dueMonth">Mês de vencimento</label>
+                  <label>Mês</label>
                   <input
-                    type="text"
-                    id="dueMonth"
                     name="dueMonth"
                     value={formikPagamento.values.dueMonth}
                     onChange={formikPagamento.handleChange}
-                    onBlur={formikPagamento.handleBlur}
                   />
-                  {formikPagamento.touched.dueMonth &&
-                    formikPagamento.errors.dueMonth && (
-                      <ErrorMessage>
-                        {formikPagamento.errors.dueMonth}
-                      </ErrorMessage>
-                    )}
                 </LabelContainer>
 
                 <LabelContainer>
-                  <label htmlFor="dueYear">Ano de vencimento</label>
+                  <label>Ano</label>
                   <input
-                    type="text"
-                    id="dueYear"
                     name="dueYear"
                     value={formikPagamento.values.dueYear}
                     onChange={formikPagamento.handleChange}
-                    onBlur={formikPagamento.handleBlur}
                   />
-                  {formikPagamento.touched.dueYear &&
-                    formikPagamento.errors.dueYear && (
-                      <ErrorMessage>
-                        {formikPagamento.errors.dueYear}
-                      </ErrorMessage>
-                    )}
                 </LabelContainer>
               </OrderRow>
 
-              <OrderButton className="marginTop" type="submit">
-                Finalizar pagamento
-              </OrderButton>
+              <OrderButton type="submit">Finalizar pagamento</OrderButton>
 
               <OrderButton type="button" onClick={fecharPagamento}>
-                Voltar para edição de endereço
+                Voltar
               </OrderButton>
             </form>
           ) : (
-            <form id="deliveryForm" onSubmit={formikEntrega.handleSubmit}>
+            <form onSubmit={formikEntrega.handleSubmit}>
               <OrderTitle>Entrega</OrderTitle>
 
               <OrderRow>
                 <LabelContainer>
-                  <label htmlFor="name">Quem irá receber</label>
+                  <label>Quem irá receber</label>
                   <input
-                    type="text"
-                    id="name"
                     name="name"
                     value={formikEntrega.values.name}
                     onChange={formikEntrega.handleChange}
-                    onBlur={formikEntrega.handleBlur}
                   />
-                  {formikEntrega.touched.name && formikEntrega.errors.name && (
-                    <ErrorMessage>{formikEntrega.errors.name}</ErrorMessage>
-                  )}
                 </LabelContainer>
               </OrderRow>
 
               <OrderRow>
                 <LabelContainer>
-                  <label htmlFor="endereco">Endereço</label>
+                  <label>Endereço</label>
                   <input
-                    type="text"
-                    id="endereco"
                     name="endereco"
                     value={formikEntrega.values.endereco}
                     onChange={formikEntrega.handleChange}
-                    onBlur={formikEntrega.handleBlur}
                   />
-                  {formikEntrega.touched.endereco &&
-                    formikEntrega.errors.endereco && (
-                      <ErrorMessage>
-                        {formikEntrega.errors.endereco}
-                      </ErrorMessage>
-                    )}
                 </LabelContainer>
               </OrderRow>
 
               <OrderRow>
                 <LabelContainer>
-                  <label htmlFor="cidade">Cidade</label>
+                  <label>Cidade</label>
                   <input
-                    type="text"
-                    id="cidade"
                     name="cidade"
                     value={formikEntrega.values.cidade}
                     onChange={formikEntrega.handleChange}
-                    onBlur={formikEntrega.handleBlur}
                   />
-                  {formikEntrega.touched.cidade &&
-                    formikEntrega.errors.cidade && (
-                      <ErrorMessage>{formikEntrega.errors.cidade}</ErrorMessage>
-                    )}
                 </LabelContainer>
               </OrderRow>
 
               <OrderRow>
                 <LabelContainer>
-                  <label htmlFor="cep">CEP</label>
+                  <label>CEP</label>
                   <input
-                    type="text"
-                    id="cep"
                     name="cep"
                     value={formikEntrega.values.cep}
                     onChange={formikEntrega.handleChange}
-                    onBlur={formikEntrega.handleBlur}
                   />
-                  {formikEntrega.touched.cep && formikEntrega.errors.cep && (
-                    <ErrorMessage>{formikEntrega.errors.cep}</ErrorMessage>
-                  )}
                 </LabelContainer>
 
                 <LabelContainer>
-                  <label htmlFor="numero">Número</label>
+                  <label>Número</label>
                   <input
-                    type="text"
-                    id="numero"
                     name="numero"
                     value={formikEntrega.values.numero}
                     onChange={formikEntrega.handleChange}
-                    onBlur={formikEntrega.handleBlur}
                   />
-                  {formikEntrega.touched.numero &&
-                    formikEntrega.errors.numero && (
-                      <ErrorMessage>{formikEntrega.errors.numero}</ErrorMessage>
-                    )}
                 </LabelContainer>
               </OrderRow>
 
               <OrderRow>
                 <LabelContainer>
-                  <label htmlFor="complemento">Complemento (opcional)</label>
+                  <label>Complemento</label>
                   <input
-                    type="text"
-                    id="complemento"
                     name="complemento"
                     value={formikEntrega.values.complemento}
                     onChange={formikEntrega.handleChange}
-                    onBlur={formikEntrega.handleBlur}
                   />
                 </LabelContainer>
               </OrderRow>
 
-              <OrderButton className="marginTop" type="submit">
-                Continuar com pagamento
-              </OrderButton>
+              <OrderButton type="submit">Continuar com pagamento</OrderButton>
+
               <OrderButton type="button" onClick={fecharPedido}>
                 Voltar para o carrinho
               </OrderButton>

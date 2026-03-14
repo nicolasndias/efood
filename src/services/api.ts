@@ -4,9 +4,12 @@ import Cardapio from '../models/Cardapio'
 import Checkout from '../models/Checkout'
 
 const api = createApi({
+  reducerPath: 'api',
+
   baseQuery: fetchBaseQuery({
     baseUrl: 'https://api-ebac.vercel.app/api/efood/'
   }),
+
   endpoints: (builder) => ({
     getCardapio: builder.query<Cardapio[], void>({
       query: () => 'restaurantes'
@@ -16,7 +19,7 @@ const api = createApi({
       query: (id) => `restaurantes/${id}`
     }),
 
-    purchase: builder.mutation<any, Checkout>({
+    purchase: builder.mutation<{ orderId: string }, Checkout>({
       query: (body) => ({
         url: 'checkout',
         method: 'POST',

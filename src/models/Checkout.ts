@@ -1,10 +1,9 @@
 type Checkout = {
-  products: [
-    {
-      id: number
-      price: number
-    }
-  ]
+  products: {
+    id: number
+    price: number
+  }[]
+
   delivery: {
     receiver: string
     address: {
@@ -15,6 +14,7 @@ type Checkout = {
       complement: string
     }
   }
+
   payment: {
     card: {
       name: string
